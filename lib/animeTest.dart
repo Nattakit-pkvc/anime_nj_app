@@ -1,11 +1,7 @@
-ต้องการธีม ขาว ฟ้า ชมพู 
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'dart:async';
-
-// Check Internet Connection
 import 'package:connectivity_plus/connectivity_plus.dart';
-// Show Toast Message
 import 'package:fluttertoast/fluttertoast.dart';
 
 class FirstScreen extends StatefulWidget {
@@ -19,39 +15,24 @@ class _FirstScreenState extends State<FirstScreen> {
   @override
   void initState() {
     super.initState();
-
-    // Step 3: Check internet connection
     checkInternetConnection();
   }
 
-  // Step 3: Check internet connection
   void checkInternetConnection() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
     if (connectivityResult.contains(ConnectivityResult.mobile)) {
-      // Mobile network available.
-      _showToast(context, "Mobile network is avaliable.");
+      _showToast(context, "Mobile network is available.");
     } else if (connectivityResult.contains(ConnectivityResult.wifi)) {
-      // Wi-fi is available.
-      // Note for Android:
-      // When both mobile and Wi-Fi are turned on system will return Wi-Fi only as active network type
-      _showToast(context, "Wi-Fi is avaliable.");
+      _showToast(context, "Wi-Fi is available.");
     } else if (connectivityResult.contains(ConnectivityResult.ethernet)) {
-      // Ethernet connection available.
-      _showToast(context, "Ethernet is avaliable.");
+      _showToast(context, "Ethernet is available.");
     } else if (connectivityResult.contains(ConnectivityResult.vpn)) {
-      // Vpn connection active.
-      // Note for iOS and macOS:
-      // There is no separate network interface type for [vpn].
-      // It returns [other] on any device (also simulator)
       _showToast(context, "Vpn connection active.");
     } else if (connectivityResult.contains(ConnectivityResult.bluetooth)) {
-      // Bluetooth connection available.
-      _showToast(context, "Blutooth connection active.");
+      _showToast(context, "Bluetooth connection active.");
     } else if (connectivityResult.contains(ConnectivityResult.other)) {
-      // Connected to a network which is not in the above mentioned networks.
-      _showToast(context, "Other network is avaliable.");
+      _showToast(context, "Other network is available.");
     } else if (connectivityResult.contains(ConnectivityResult.none)) {
-      // No available network types
       setState(() {
         _showAlertDialog(
           context,
@@ -66,9 +47,14 @@ class _FirstScreenState extends State<FirstScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        // ✅ Gradient: ขาว + ฟ้า + ชมพู
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
+            colors: [
+              Color(0xFFFFFFFF), // ขาว
+              Color(0xFF80D8FF), // ฟ้าอ่อน
+              Color(0xFFF48FB1), // ชมพู
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -101,15 +87,15 @@ class _FirstScreenState extends State<FirstScreen> {
                   ),
                 ),
                 const SizedBox(height: 40),
-                // Spin animation
+                // Spin animation (ชมพู)
                 const SpinKitFadingCircle(color: Colors.pinkAccent, size: 50.0),
                 const SizedBox(height: 20),
                 const Text(
                   "Welcome to Anime Rating",
                   style: TextStyle(
                     fontSize: 20,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -123,7 +109,6 @@ class _FirstScreenState extends State<FirstScreen> {
 
 // Step 4 : Show toast message
 void _timer(BuildContext context) {
-  // ไปหน้า SecondScreen หลัง 3 วินาที
   Timer(
     const Duration(seconds: 3),
     () => Navigator.pushReplacement(
@@ -133,51 +118,48 @@ void _timer(BuildContext context) {
   );
 }
 
-// Step 4 : Show toast message
 void _showToast(BuildContext context, String msg) {
   Fluttertoast.showToast(
     msg: msg,
     toastLength: Toast.LENGTH_SHORT,
     gravity: ToastGravity.BOTTOM,
     timeInSecForIosWeb: 1,
-    backgroundColor: Colors.lightGreen,
+    backgroundColor: Colors.blueAccent, // ✅ ฟ้า
     textColor: Colors.white,
-    fontSize: 24.0,
+    fontSize: 20.0,
   );
   _timer(context);
 }
 
-// Step 4 : Show toast message
 void _showAlertDialog(BuildContext context, String title, String msg) {
   showDialog(
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
+        backgroundColor: Colors.white,
         title: Text(
           title,
           style: const TextStyle(
             fontSize: 24,
-            color: Colors.redAccent,
+            color: Colors.pinkAccent,
             fontWeight: FontWeight.w500,
-            fontFamily: "Alike",
           ),
         ),
-        content: Text(msg),
+        content: Text(msg, style: const TextStyle(color: Colors.black87)),
         actions: <Widget>[
           ElevatedButton(
-            style: ButtonStyle(
-              backgroundColor: WidgetStatePropertyAll(Colors.black),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.lightBlueAccent, // ✅ ฟ้าอ่อน
             ),
             onPressed: () {
-              Navigator.pop(context); //ถอยหลัง 1 หน้า
+              Navigator.pop(context);
             },
-            child: Text(
+            child: const Text(
               "OK",
               style: TextStyle(
                 fontSize: 20,
-                color: Colors.blue.shade200,
+                color: Colors.white,
                 fontWeight: FontWeight.w500,
-                fontFamily: "Alike",
               ),
             ),
           ),
@@ -194,9 +176,13 @@ class SecondScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        // ✅ Gradient: ฟ้า + ชมพู
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFff9966), Color(0xFFff5e62)],
+            colors: [
+              Color(0xFF80D8FF), // ฟ้าอ่อน
+              Color(0xFFF48FB1), // ชมพู
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -225,3 +211,5 @@ class SecondScreen extends StatelessWidget {
     );
   }
 }
+
+

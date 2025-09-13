@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "737385382638",
+    "project_id": "anime-rating01",
+    "storage_bucket": "anime-rating01.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:737385382638:android:cf7621d79cee2fcf9ce9ff",
+        "android_client_info": {
+          "package_name": "com.example.anime_nj_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjd84MVI1gLK7f-_Mxg72oySFtyBoax1E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
