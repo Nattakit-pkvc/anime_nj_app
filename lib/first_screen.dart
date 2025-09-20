@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// ======================= FirstScreen =======================
+// ======================= FirstScreen (Loading) =======================
 class FirstScreen extends StatefulWidget {
   const FirstScreen({super.key});
 
@@ -42,24 +42,26 @@ class _FirstScreenState extends State<FirstScreen> {
   void checkInternetConnection() async {
     var connectivityResult = await Connectivity().checkConnectivity();
 
-    if (connectivityResult.contains(ConnectivityResult.none)) {
+    if (connectivityResult == ConnectivityResult.none) {
       _showAlertDialog(
         context,
         "No Internet",
         "Please check your internet connection.",
       );
-    } else if (connectivityResult.contains(ConnectivityResult.mobile)) {
-      _showToast(context, "Mobile network is available.");
-    } else if (connectivityResult.contains(ConnectivityResult.wifi)) {
-      _showToast(context, "Wi-Fi is available.");
-    } else if (connectivityResult.contains(ConnectivityResult.ethernet)) {
-      _showToast(context, "Ethernet is available.");
-    } else if (connectivityResult.contains(ConnectivityResult.vpn)) {
-      _showToast(context, "VPN connection active.");
-    } else if (connectivityResult.contains(ConnectivityResult.bluetooth)) {
-      _showToast(context, "Bluetooth connection active.");
     } else {
-      _showToast(context, "Other network is available.");
+      String networkMsg = "Other network is available.";
+      if (connectivityResult == ConnectivityResult.mobile) {
+        networkMsg = "Mobile network is available.";
+      } else if (connectivityResult == ConnectivityResult.wifi) {
+        networkMsg = "Wi-Fi is available.";
+      } else if (connectivityResult == ConnectivityResult.ethernet) {
+        networkMsg = "Ethernet is available.";
+      } else if (connectivityResult == ConnectivityResult.vpn) {
+        networkMsg = "VPN connection active.";
+      } else if (connectivityResult == ConnectivityResult.bluetooth) {
+        networkMsg = "Bluetooth connection active.";
+      }
+      _showToast(context, networkMsg);
     }
   }
 
@@ -134,15 +136,12 @@ void _showToast(BuildContext context, String msg) {
     textColor: Colors.pinkAccent.shade200,
     fontSize: 18.0,
   );
-  _timer(context);
-}
-
-void _timer(BuildContext context) {
+  // Delay แล้วไปหน้า SecondScreen
   Timer(
     const Duration(seconds: 3),
     () => Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const SecondScreen()),
+      MaterialPageRoute(builder: (context) => const AnimeListScreen()),
     ),
   );
 }
@@ -175,15 +174,15 @@ void _showAlertDialog(BuildContext context, String title, String msg) {
   );
 }
 
-// ======================= SecondScreen =======================
-class SecondScreen extends StatefulWidget {
-  const SecondScreen({super.key});
+// ======================= AnimeListScreen (SecondScreen) =======================
+class AnimeListScreen extends StatefulWidget {
+  const AnimeListScreen({super.key});
 
   @override
-  State<SecondScreen> createState() => _SecondScreenState();
+  State<AnimeListScreen> createState() => _AnimeListScreenState();
 }
 
-class _SecondScreenState extends State<SecondScreen> {
+class _AnimeListScreenState extends State<AnimeListScreen> {
   final FirestoreService firestoreService = FirestoreService();
 
   final TextEditingController nameController = TextEditingController();
@@ -223,11 +222,7 @@ class _SecondScreenState extends State<SecondScreen> {
               const SizedBox(height: 10),
               _buildTextField("Season", seasonController, isNumber: true),
               const SizedBox(height: 10),
-              _buildTextField(
-                "Score (0.00-5.00)",
-                scoreController,
-                isNumber: true,
-              ),
+              _buildTextField("Score (0.00-5.00)", scoreController, isNumber: true),
               const SizedBox(height: 10),
               _buildTextField("Image URL", imageUrlController),
             ],
@@ -240,32 +235,27 @@ class _SecondScreenState extends State<SecondScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.pinkAccent),
-            onPressed: () {
-              // ตรวจสอบทุกช่องไม่ว่าง
+            onPressed: () async {
+              // ตรวจสอบ
               if (nameController.text.isEmpty ||
                   chapterController.text.isEmpty ||
                   seasonController.text.isEmpty ||
                   scoreController.text.isEmpty ||
                   imageUrlController.text.isEmpty) {
-                _showToast(context, "Please fill all fields!");
+                _showAlert(context, "Error", "Please fill all fields!");
                 return;
               }
 
-              // Chapter / Season ต้องเป็นตัวเลข
               int? chapter = int.tryParse(chapterController.text);
               int? season = int.tryParse(seasonController.text);
+              double? score = double.tryParse(scoreController.text);
+
               if (chapter == null || season == null) {
-                _showToast(context, "Chapter and Season must be numbers!");
+                _showAlert(context, "Error", "Chapter and Season must be numbers!");
                 return;
               }
-
-              // Score 0.00 - 5.00
-              double? score = double.tryParse(scoreController.text);
               if (score == null || score < 0 || score > 5) {
-                _showToast(
-                  context,
-                  "Score must be a number between 0.00 and 5.00",
-                );
+                _showAlert(context, "Error", "Score must be between 0.00 and 5.00");
                 return;
               }
               score = double.parse(score.toStringAsFixed(2));
@@ -274,30 +264,35 @@ class _SecondScreenState extends State<SecondScreen> {
               final String imageUrl = imageUrlController.text;
 
               if (!imageUrl.startsWith("http")) {
-                _showToast(context, "Image URL must start with http or https");
+                _showAlert(context, "Error", "Image URL must start with http or https");
                 return;
               }
 
-              if (animeID != null) {
-                firestoreService.updateAnime(
-                  animeID: animeID,
-                  animeName: name,
-                  animeChapter: chapter,
-                  animeSeason: season,
-                  animeScore: score,
-                  animeImageUrl: imageUrl,
-                );
-              } else {
-                firestoreService.addAnime(
-                  animeName: name,
-                  animeChapter: chapter,
-                  animeSeason: season,
-                  animeScore: score,
-                  animeImageUrl: imageUrl,
-                );
-              }
+              try {
+                if (animeID != null) {
+                  await firestoreService.updateAnime(
+                    animeID: animeID,
+                    animeName: name,
+                    animeChapter: chapter,
+                    animeSeason: season,
+                    animeScore: score,
+                    animeImageUrl: imageUrl,
+                  );
+                } else {
+                  await firestoreService.addAnime(
+                    animeName: name,
+                    animeChapter: chapter,
+                    animeSeason: season,
+                    animeScore: score,
+                    animeImageUrl: imageUrl,
+                  );
+                }
 
-              Navigator.of(context).pop();
+                Navigator.of(context).pop(); // ปิด dialog
+                _showAlert(context, "Success", "Anime saved successfully!");
+              } catch (e) {
+                _showAlert(context, "Error", "Failed to save anime: $e");
+              }
             },
             child: const Text('Save'),
           ),
@@ -306,11 +301,8 @@ class _SecondScreenState extends State<SecondScreen> {
     );
   }
 
-  TextField _buildTextField(
-    String label,
-    TextEditingController controller, {
-    bool isNumber = false,
-  }) {
+  TextField _buildTextField(String label, TextEditingController controller,
+      {bool isNumber = false}) {
     return TextField(
       controller: controller,
       keyboardType: isNumber
@@ -333,6 +325,34 @@ class _SecondScreenState extends State<SecondScreen> {
           borderSide: const BorderSide(color: Colors.white),
         ),
       ),
+    );
+  }
+
+  void _showAlert(BuildContext context, String title, String msg) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2C3E50),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          title: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 22,
+              color: Colors.pinkAccent,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(msg, style: const TextStyle(color: Colors.white70)),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.pinkAccent),
+              onPressed: () => Navigator.pop(context),
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
     );
   }
 
