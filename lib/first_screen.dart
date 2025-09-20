@@ -4,8 +4,27 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:anime_nj_app/services/filestore.dart';
+import 'package:anime_nj_app/services/filestore.dart'; // Firestore service
 
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Anime App',
+      theme: ThemeData.dark(),
+      home: const FirstScreen(),
+    );
+  }
+}
+
+// ======================= FirstScreen =======================
 class FirstScreen extends StatefulWidget {
   const FirstScreen({super.key});
 
@@ -20,11 +39,16 @@ class _FirstScreenState extends State<FirstScreen> {
     checkInternetConnection();
   }
 
-  // ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต
   void checkInternetConnection() async {
     var connectivityResult = await Connectivity().checkConnectivity();
 
-    if (connectivityResult.contains(ConnectivityResult.mobile)) {
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      _showAlertDialog(
+        context,
+        "No Internet",
+        "Please check your internet connection.",
+      );
+    } else if (connectivityResult.contains(ConnectivityResult.mobile)) {
       _showToast(context, "Mobile network is available.");
     } else if (connectivityResult.contains(ConnectivityResult.wifi)) {
       _showToast(context, "Wi-Fi is available.");
@@ -34,14 +58,8 @@ class _FirstScreenState extends State<FirstScreen> {
       _showToast(context, "VPN connection active.");
     } else if (connectivityResult.contains(ConnectivityResult.bluetooth)) {
       _showToast(context, "Bluetooth connection active.");
-    } else if (connectivityResult.contains(ConnectivityResult.other)) {
+    } else {
       _showToast(context, "Other network is available.");
-    } else if (connectivityResult.contains(ConnectivityResult.none)) {
-      _showAlertDialog(
-        context,
-        "No Internet",
-        "Please check your internet connection.",
-      );
     }
   }
 
@@ -51,11 +69,7 @@ class _FirstScreenState extends State<FirstScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFF1D1E33), // Dark Purple
-              Color(0xFF2C3E50), // Dark Blue
-              Color(0xFF34495E), // Grayish Blue
-            ],
+            colors: [Color(0xFF1D1E33), Color(0xFF2C3E50), Color(0xFF34495E)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -109,7 +123,7 @@ class _FirstScreenState extends State<FirstScreen> {
   }
 }
 
-// Toast แบบธีมเข้ม
+// ======================= Toast / Alert =======================
 void _showToast(BuildContext context, String msg) {
   Fluttertoast.showToast(
     msg: msg,
@@ -123,7 +137,6 @@ void _showToast(BuildContext context, String msg) {
   _timer(context);
 }
 
-// Timer ไปหน้า SecondScreen หลัง 3 วินาที
 void _timer(BuildContext context) {
   Timer(
     const Duration(seconds: 3),
@@ -134,7 +147,6 @@ void _timer(BuildContext context) {
   );
 }
 
-// AlertDialog แบบธีมเข้ม
 void _showAlertDialog(BuildContext context, String title, String msg) {
   showDialog(
     context: context,
@@ -163,6 +175,7 @@ void _showAlertDialog(BuildContext context, String title, String msg) {
   );
 }
 
+// ======================= SecondScreen =======================
 class SecondScreen extends StatefulWidget {
   const SecondScreen({super.key});
 
@@ -228,59 +241,64 @@ class _SecondScreenState extends State<SecondScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.pinkAccent),
             onPressed: () {
-  // ตรวจสอบทุกช่องไม่ว่าง
-  if (nameController.text.isEmpty ||
-      chapterController.text.isEmpty ||
-      seasonController.text.isEmpty ||
-      scoreController.text.isEmpty ||
-      imageUrlController.text.isEmpty) {
-    _showToast(context, "Please fill all fields!");
-    return;
-  }
+              // ตรวจสอบทุกช่องไม่ว่าง
+              if (nameController.text.isEmpty ||
+                  chapterController.text.isEmpty ||
+                  seasonController.text.isEmpty ||
+                  scoreController.text.isEmpty ||
+                  imageUrlController.text.isEmpty) {
+                _showToast(context, "Please fill all fields!");
+                return;
+              }
 
-  // ตรวจสอบ Score
-  double? score = double.tryParse(scoreController.text);
-  if (score == null || score < 0 || score > 5) {
-    _showToast(context, "Score must be a number between 0.00 and 5.00");
-    return;
-  }
+              // Chapter / Season ต้องเป็นตัวเลข
+              int? chapter = int.tryParse(chapterController.text);
+              int? season = int.tryParse(seasonController.text);
+              if (chapter == null || season == null) {
+                _showToast(context, "Chapter and Season must be numbers!");
+                return;
+              }
 
-  // ปรับให้มีทศนิยม 2 ตำแหน่ง
-  score = double.parse(score.toStringAsFixed(2));
+              // Score 0.00 - 5.00
+              double? score = double.tryParse(scoreController.text);
+              if (score == null || score < 0 || score > 5) {
+                _showToast(
+                  context,
+                  "Score must be a number between 0.00 and 5.00",
+                );
+                return;
+              }
+              score = double.parse(score.toStringAsFixed(2));
 
-  final String name = nameController.text;
-  final int chapter = int.tryParse(chapterController.text) ?? 0;
-  final int season = int.tryParse(seasonController.text) ?? 0;
-  final String imageUrl = imageUrlController.text;
+              final String name = nameController.text;
+              final String imageUrl = imageUrlController.text;
 
-  // ตรวจสอบ URL ว่าเป็น http/https
-  if (!imageUrl.startsWith("http")) {
-    _showToast(context, "Image URL must start with http or https");
-    return;
-  }
+              if (!imageUrl.startsWith("http")) {
+                _showToast(context, "Image URL must start with http or https");
+                return;
+              }
 
-  if (animeID != null) {
-    firestoreService.updateAnime(
-      animeID: animeID,
-      animeName: name,
-      animeChapter: chapter,
-      animeSeason: season,
-      animeScore: score,
-      animeImageUrl: imageUrl,
-    );
-  } else {
-    firestoreService.addAnime(
-      animeName: name,
-      animeChapter: chapter,
-      animeSeason: season,
-      animeScore: score,
-      animeImageUrl: imageUrl,
-    );
-  }
+              if (animeID != null) {
+                firestoreService.updateAnime(
+                  animeID: animeID,
+                  animeName: name,
+                  animeChapter: chapter,
+                  animeSeason: season,
+                  animeScore: score,
+                  animeImageUrl: imageUrl,
+                );
+              } else {
+                firestoreService.addAnime(
+                  animeName: name,
+                  animeChapter: chapter,
+                  animeSeason: season,
+                  animeScore: score,
+                  animeImageUrl: imageUrl,
+                );
+              }
 
-  Navigator.of(context).pop();
-},
-
+              Navigator.of(context).pop();
+            },
             child: const Text('Save'),
           ),
         ],
@@ -296,15 +314,24 @@ class _SecondScreenState extends State<SecondScreen> {
     return TextField(
       controller: controller,
       keyboardType: isNumber
-          ? TextInputType.numberWithOptions(decimal: true)
+          ? const TextInputType.numberWithOptions(decimal: true)
           : TextInputType.text,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.pinkAccent),
+        labelStyle: const TextStyle(color: Colors.white),
+        hintStyle: const TextStyle(color: Colors.white70),
         filled: true,
         fillColor: Colors.blueGrey.shade700.withOpacity(0.3),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.white70),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.white),
+        ),
       ),
     );
   }
@@ -371,13 +398,47 @@ class _SecondScreenState extends State<SecondScreen> {
                             ),
                           )
                         : null,
-                    title: Text(
-                      '${animeData['animeName']} (Season: ${animeData['animeSeason']})',
-                      style: const TextStyle(color: Colors.white),
+                    title: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${animeData['animeName']}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Season: ${animeData['animeSeason']}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
-                    subtitle: Text(
-                      'Chapter: ${animeData['animeChapter']} | Score: ${animeData['animeScore']}',
-                      style: const TextStyle(color: Colors.white70),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Chapter: ${animeData['animeChapter']}',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${animeData['animeScore']}',
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -394,8 +455,47 @@ class _SecondScreenState extends State<SecondScreen> {
                             Icons.delete,
                             color: Colors.redAccent,
                           ),
-                          onPressed: () =>
-                              firestoreService.deleteAnime(anime.id),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                backgroundColor: const Color(0xFF2C3E50),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                title: const Text(
+                                  'Confirm Delete',
+                                  style: TextStyle(
+                                    color: Colors.pinkAccent,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                content: const Text(
+                                  'Are you sure you want to delete this anime?',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                                actions: [
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.grey,
+                                    ),
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.redAccent,
+                                    ),
+                                    onPressed: () {
+                                      firestoreService.deleteAnime(anime.id);
+                                      Navigator.pop(context);
+                                    },
+                                    child: const Text('Delete'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
